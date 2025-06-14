@@ -46,37 +46,6 @@
         key: "{{ lookup('pipe','ssh-keyscan github.com') }}"
         state: present
 
-    # - name: Debug - Check if SSH key exists and has correct permissions
-    #   become: true
-    #   become_user: ubuntu
-    #   shell: ls -la /home/ubuntu/.ssh/id_rsa
-    #   register: ssh_key_check
-
-    # - name: Display SSH key info
-    #   debug:
-    #     var: ssh_key_check
-
-    # - name: Debug - Check SSH key format
-    #   become: true
-    #   become_user: ubuntu
-    #   shell: head -1 /home/ubuntu/.ssh/id_rsa && tail -1 /home/ubuntu/.ssh/id_rsa
-    #   register: ssh_key_format
-
-    # - name: Display SSH key format
-    #   debug:
-    #     var: ssh_key_format
-
-    # - name: Test SSH connection to GitHub (will fail but shows details)
-    #   become: true
-    #   become_user: ubuntu
-    #   shell: ssh -i /home/ubuntu/.ssh/id_rsa -o StrictHostKeyChecking=no -vT git@github.com
-    #   register: ssh_debug
-    #   failed_when: false
-
-    # - name: Display SSH debug info
-    #   debug:
-    #     var: ssh_debug
-
     - name: Clone or update private todo-app repo via SSH
       become: true
       become_user: ubuntu
@@ -143,13 +112,13 @@
 
     - name: Pull latest backend image from GHCR
       community.docker.docker_image:
-        name: ghcr.io/{{ ghcr_user }}/fastapi-todo
+        name: ghcr.io/{{ ghcr_user }}/devops_todo/fastapi-todo
         tag: latest
         source: pull
 
     - name: Pull latest frontend image from GHCR
       community.docker.docker_image:
-        name: ghcr.io/{{ ghcr_user }}/todo-frontend
+        name: ghcr.io/{{ ghcr_user }}/devops_todo/todo-frontend
         tag: latest
         source: pull
 
