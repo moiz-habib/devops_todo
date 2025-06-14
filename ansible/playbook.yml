@@ -22,21 +22,19 @@
         state: present
         update_cache: yes
 
-    - name: Install private key for repo access
-      copy:
-        dest: /home/ubuntu/.ssh/id_rsa
-        content: "{{ lookup('env','REPO_SSH_KEY') }}"
-        owner: ubuntu
-        group: ubuntu
-        mode: "0600"
+    - name: Fetch GitHub SSH public key
+      run_once: true
+      delegate_to: localhost
+      register: github_key
+      ansible.builtin.command: ssh-keyscan github.com
 
-    - name: Add GitHub.com to known_hosts for ubuntu
+    - name: Add GitHub.com to ubuntu's known_hosts
       become: true
       become_user: ubuntu
       ansible.builtin.known_hosts:
         path: /home/ubuntu/.ssh/known_hosts
         name: github.com
-        key: "{{ lookup('pipe','ssh-keyscan github.com') }}"
+        key: "{{ github_key.stdout }}"
         state: present
 
     - name: Ensure .ssh directory exists
