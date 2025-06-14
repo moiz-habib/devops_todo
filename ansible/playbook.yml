@@ -8,13 +8,12 @@
     ghcr_token: "{{ lookup('env','GHCR_TOKEN') }}"
 
   tasks:
-    - name: Ensure .ssh directory for ubuntu
-      file:
-        path: /home/ubuntu/.ssh
-        state: directory
-        mode: "0700"
-        owner: ubuntu
-        group: ubuntu
+    - name: Add host to known_hosts
+      ansible.builtin.known_hosts:
+        path: /home/ubuntu/.ssh/known_hosts
+        name: "{{ inventory_hostname }}"
+        key: "{{ lookup('pipe', 'ssh-keyscan -H ' + inventory_hostname) }}"
+        state: present
 
     - name: Install Git if missing
       ansible.builtin.apt:
@@ -23,18 +22,11 @@
         update_cache: yes
 
     - name: Install private key for repo access
-      copy:
+      become: true
+      become_user: ubuntu
+      ansible.builtin.copy:
         dest: /home/ubuntu/.ssh/id_rsa
-        content: "{{ lookup('env','REPO_SSH_KEY') }}"
-        owner: ubuntu
-        group: ubuntu
-        mode: "0600"
-
-    - name: Ensure SSH key has correct permissions
-      file:
-        path: /home/ubuntu/.ssh/id_rsa
-        owner: ubuntu
-        group: ubuntu
+        content: "{{ lookup('env', 'REPO_SSH_KEY')}}"
         mode: "0600"
 
     - name: Add GitHub.com to known_hosts for ubuntu
@@ -43,19 +35,48 @@
       ansible.builtin.known_hosts:
         path: /home/ubuntu/.ssh/known_hosts
         name: github.com
-        key: "{{ lookup('pipe','ssh-keyscan github.com') }}"
+        key: "{{ lookup('pipe', 'ssh-keyscan github.com') }}"
         state: present
+
+    - name: Ensure .ssh directory exists
+      become: true
+      become_user: ubuntu
+      file:
+        path: /home/ubuntu/.ssh
+        state: directory
+        mode: "0700"
+
+    - name: Copy private SSH key
+      become: true
+      become_user: ubuntu
+      copy:
+        dest: /home/ubuntu/.ssh/id_rsa
+        content: "{{ lookup('env', 'REPO_SSH_KEY') }}"
+        mode: "0600"
+
+    - name: Ensure /opt/todo-app exists and is owned by ubuntu
+      become: true
+      ansible.builtin.file:
+        path: /opt/todo-app
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
 
     - name: Clone or update private todo-app repo via SSH
       become: true
       become_user: ubuntu
-      ansible.builtin.git:
-        repo: git@github.com:moiz-habib/devops_todo.git
-        dest: /home/ubuntu/todo-app
-        key_file: /home/ubuntu/.ssh/id_rsa
-        accept_hostkey: yes
-        update: yes
-        force: yes
+      shell: |
+        if [ -d /opt/todo-app/.git ]; then
+          cd /opt/todo-app && \
+          GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_rsa -o StrictHostKeyChecking=no' \
+            git pull
+        else
+          GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_rsa -o StrictHostKeyChecking=no' \
+            git clone git@github.com:moiz-habib/devops_todo.git /opt/todo-app
+        fi
+      args:
+        executable: /bin/bash
 
     - name: Wait for cloud-init to finish
       wait_for:
@@ -123,4 +144,4 @@
         source: pull
 
     - name: Deploy Docker Swarm stack
-      shell: docker stack deploy -c /home/ubuntu/todo-app/docker-stack.yml todo-app
+      shell: docker stack deploy -c /opt/todo-app/docker-stack.yml todo-app
