@@ -123,4 +123,4 @@
         source: pull
 
     - name: Deploy Docker Swarm stack
-      shell: docker stack deploy -c /opt/todo-app/docker-stack.yml todo-app
+      shell: docker stack deploy -c /home/ubuntu/todo-app/docker-stack.yml todo-app
