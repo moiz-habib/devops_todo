@@ -30,6 +30,13 @@
         group: ubuntu
         mode: "0600"
 
+    - name: Ensure SSH key has correct permissions
+      file:
+        path: /home/ubuntu/.ssh/id_rsa
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+
     - name: Add GitHub.com to known_hosts for ubuntu
       become: true
       become_user: ubuntu
@@ -42,17 +49,13 @@
     - name: Clone or update private todo-app repo via SSH
       become: true
       become_user: ubuntu
-      shell: |
-        if [ -d /home/ubuntu/todo-app/.git ]; then
-          cd /home/ubuntu/todo-app && \
-          GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_rsa -o StrictHostKeyChecking=no' \
-            git pull
-        else
-          GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_rsa -o StrictHostKeyChecking=no' \
-            git clone git@github.com:moiz-habib/devops_todo.git /home/ubuntu/todo-app
-        fi
-      args:
-        executable: /bin/bash
+      ansible.builtin.git:
+        repo: git@github.com:moiz-habib/devops_todo.git
+        dest: /home/ubuntu/todo-app
+        key_file: /home/ubuntu/.ssh/id_rsa
+        accept_hostkey: yes
+        update: yes
+        force: yes
 
     - name: Wait for cloud-init to finish
       wait_for:
