@@ -25,4 +25,4 @@ Thumbs.db
 
 # Ignore SSH keys
 swarm-key
-swarm_deploy_key
+swarm-key-deploy
