@@ -36,7 +36,7 @@
       ansible.builtin.known_hosts:
         path: /home/ubuntu/.ssh/known_hosts
         name: github.com
-        key: "{{ lookup('env','REPO_SSH_KEY') }}"
+        key: "{{ lookup('pipe','ssh-keyscan github.com') }}"
         state: present
 
     - name: Clone or update private todo-app repo via SSH
